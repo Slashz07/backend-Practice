@@ -16,7 +16,7 @@ const uploadOnCloudinary = async (uploadFileUrl) => {
     })
     console.log("File has been successfully uploaded on Cloudinary! Access it on: ", response.url)
 
-    return response
+    return response//we can access the url of the saved video from response.url
 
   } catch {
     fs.unlinkSync(uploadFileUrl)
