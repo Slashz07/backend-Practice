@@ -12,7 +12,7 @@ import { db_name } from "../constants.js";
 
 
 
-const dbConnect = () => {
+const dbConnect =async () => {
 
   mongoose.connect(`${process.env.mongoDb_URI}/${db_name}`).then((response) => {
     console.log(`connected to db at host:${response.connection.host}`)
