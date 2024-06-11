@@ -59,15 +59,15 @@ userSchema.pre("save", async function (next) {
 })
 
 userSchema.methods.generateAccessToken = function () {
-  return jwt.sign(//jwt.sign is synchronous and doesnt return any promises so await wont have any effect on it
-    {
+  return jwt.sign(//jwt.sign is synchronous and doesnt return any promises so await wont have any effect on it; jwt.sign intakes 3 values-->
+    {//payload-->
     _id: this._id,
     email: this.email,
     userName: this.userName,
     fullName:this.fullName
-    },
+    },//"token secret" key-->
     process.env.ACCESS_TOKEN_SECRET,
-    {
+    {//"Access token expiry-->"
       expiresIn: ACCESS_TOKEN_EXPIRY
     }
   )
