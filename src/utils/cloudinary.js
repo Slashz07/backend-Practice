@@ -11,8 +11,9 @@ const uploadOnCloudinary = async (uploadFileUrl) => {
   try {
     if (!uploadFileUrl) return null
     
-    const response= await cloudinary.uploader.upload(uploadFileUrl, {
-      resource_type: 'auto'
+    const response = await cloudinary.uploader.upload(uploadFileUrl, {//object here is used to set the upload options for the resource being uploaded
+      
+      resource_type: 'auto'//resource type tells what type of resource is being uploaded like it can be a video,image type etc,setting it "auto" means it detects the resource type on its own
     })
     console.log("File has been successfully uploaded on Cloudinary! Access it on: ", response.url)
 
