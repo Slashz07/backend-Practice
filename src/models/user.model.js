@@ -40,7 +40,7 @@ const userSchema = new Schema(
     ],
     password: {
       type: String,
-      required: [true, "please provide a passwrod"],
+      required: [true, "please provide a password"],
     },
     refershToken: {
       type:String
