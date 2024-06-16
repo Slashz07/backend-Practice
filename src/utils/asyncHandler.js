@@ -9,11 +9,10 @@ const wrapper = (fn) =>async (req,res,next) => {
   try {
     await fn(req, res, next)
   } catch (error) {
-    res.status(err.code || 800).json({
+    res.status(error.statusCode || 500).json({
       success: false,
-      message: err.message
+      message:error.message
     })
-    next(err) 
   }
 }
 export {wrapper}
