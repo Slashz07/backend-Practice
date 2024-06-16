@@ -14,7 +14,6 @@ const userSchema = new Schema(
     },
     email: {
       type: String,
-      unique: true,
       lowercase: true,
       required: true,
       trim: true
@@ -42,7 +41,7 @@ const userSchema = new Schema(
       type: String,
       required: [true, "please provide a password"],
     },
-    refershToken: {
+    refreshToken: {
       type:String
     }
   },
