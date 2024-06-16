@@ -15,7 +15,8 @@ const uploadOnCloudinary = async (uploadFileUrl) => {
       
       resource_type: 'auto'//resource type tells what type of resource is being uploaded like it can be a video,image type etc,setting it "auto" means it detects the resource type on its own
     })
-    console.log("File has been successfully uploaded on Cloudinary! Access it on: ", response.url)
+
+    fs.unlinkSync(uploadFileUrl)
 
     return response//we can access the url of the saved video from response.url
 
