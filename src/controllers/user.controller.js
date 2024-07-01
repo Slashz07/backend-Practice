@@ -7,10 +7,6 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 const registerUser = wrapper(async function (req, res) {
 
   const { userName, password, email, fullName } =  req.body
-  console.log("Username: ", userName)
-  console.log("password: ", password)
-  console.log("email: ", email)
-  console.log("fullName: ", fullName)
 
   if ([userName, password, email, fullName].some((field) => field?.trim() === "" ||field===undefined)) {
     throw new apiError(400, "All fields are required to be filled")
@@ -61,8 +57,10 @@ const registerUser = wrapper(async function (req, res) {
     coverImage:coverImageCloudinary?.url || ""//since we never checked whether user gave coverImage or not since it isnt "required",here we use "?." to check 
   })
 
-  const userCreated = await User.findById(user._id).select(//here we could have directly done user.select() but doing  User.findById(user._id) instead alllows us to ensure that the user object has been  created in the database otherwise user._id would return nyll/undefined
+  const userCreated = await User.findById(user._id).select(//here we could have directly done user.select() but doing  User.findById(user._id) instead alllows us to ensure that the user object has been  created in the database otherwise user._id would return null/undefined
+
     "-password -refreshToken"
+    //the values we provide to select() are removed from the User object ,here password and refresh token are removed from the returned object
   )
 
   if (!userCreated) {
@@ -74,4 +72,6 @@ const registerUser = wrapper(async function (req, res) {
   )
 
 })
+
+
 export { registerUser }
