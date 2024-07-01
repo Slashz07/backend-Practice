@@ -4,6 +4,16 @@ import { apiResponse } from "../utils/apiResponse.js";
 import { wrapper } from "../utils/asyncHandler.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 
+const generateAccessAndRefreshToken = async (userId) => {
+  const user = await User.findById(userId)
+  const accessToken = user.generateAccessToken
+  const refreshToken = user.generateRefreshToken
+
+  user.refreshToken = refreshToken
+  await user.save({ validateBeforeSave: false })//this ensures the  validation checks do not occur for all values present in user model schema that are "required" since we are only providing a sigle value here
+  return {accessToken,refreshToken}
+}
+
 const registerUser = wrapper(async function (req, res) {
 
   const { userName, password, email, fullName } =  req.body
@@ -73,5 +83,26 @@ const registerUser = wrapper(async function (req, res) {
 
 })
 
+const loginUser = wrapper(async (req, res) => {
+  
+  const { userName, email, password } = req.body
+  if (!userName && !email) {
+    throw new apiError(400, "You must provide either of username or email")
+  }
 
+  const userData = await User.findOne({
+    $or:[{userName},{email}]
+  })
+  if (!userData) {
+    throw new apiError(404,"User account not found! Please register yourself")
+  }
+
+  const isPasswordValid = userData.checkPassword(password)
+  if (!isPasswordValid) {
+    throw new apiError(401,"Invalid password")
+  }
+
+  const {accessToken,refreshToken} =generateAccessAndRefreshToken(userData._id)
+
+})
 export { registerUser }
