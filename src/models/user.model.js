@@ -50,12 +50,16 @@ const userSchema = new Schema(
   }
 )
 
-userSchema.pre("save", async function (next) {
+userSchema.pre("save", async function  (next) {
   if (!this.isModified("password")) return next();
 
   this.password = await bcrypt.hash(this.password, 10)
   next()
 })
+
+userSchema.methods.checkPassword = async function (password) {
+  return await bcrypt.compare(password,this.password)
+}
 
 userSchema.methods.generateAccessToken = function () {
   return jwt.sign(//jwt.sign is synchronous and doesnt return any promises so await wont have any effect on it; jwt.sign intakes 3 values-->
@@ -67,7 +71,7 @@ userSchema.methods.generateAccessToken = function () {
     },//"token secret" key-->
     process.env.ACCESS_TOKEN_SECRET,
     {//"Access token expiry-->"
-      expiresIn: ACCESS_TOKEN_EXPIRY
+      expiresIn: process.env.ACCESS_TOKEN_EXPIRY
     }
   )
 }
@@ -78,7 +82,7 @@ userSchema.methods.generateRefreshToken = function () {
     },
     process.env.REFRESH_TOKEN_SECRET,
     {
-      expiresIn: REFRESH_TOKEN_EXPIRY
+      expiresIn: process.env.REFRESH_TOKEN_EXPIRY
     }
   )
 }
