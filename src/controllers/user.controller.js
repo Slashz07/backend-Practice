@@ -102,7 +102,28 @@ const loginUser = wrapper(async (req, res) => {
     throw new apiError(401,"Invalid password")
   }
 
-  const {accessToken,refreshToken} =generateAccessAndRefreshToken(userData._id)
+  const { accessToken, refreshToken } = generateAccessAndRefreshToken(userData._id)
+  
+  const loggedInUser = await User.findOne(userData._id).select("-password -refreshToken")//since the userData here refer to older version as the userdata was created before we provided refreshToken value,now that we have already updated the refreshToken value of userData in above method,so we need to access the updated value from database or we could have just update the value here instead i.e userData.refreshToken=refreshToken
+  
+  //send cookies-->
+  const options = {
+    httpOnly: true,
+    secure:true
+  }
+
+  return res.status(200)
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refreshToken, options)
+    .json(
+      new apiResponse(
+        200,
+        {
+          user:loggedInUser,accessToken,refreshToken
+        },
+        "User logged in successfully"
+      )
+    )
 
 })
 export { registerUser }
