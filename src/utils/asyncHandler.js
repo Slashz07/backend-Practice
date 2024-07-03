@@ -11,7 +11,7 @@ const wrapper = (fn) =>async (req,res,next) => {
   } catch (error) {
     res.status(error.statusCode || 500).json({
       success: false,
-      message:error.message
+      message: error.message
     })
   }
 }
