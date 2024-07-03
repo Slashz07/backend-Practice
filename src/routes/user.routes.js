@@ -1,6 +1,7 @@
 import { Router } from "express";
-import { registerUser } from "../controllers/user.controller.js";
+import { loginUser, logoutUser, registerUser } from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
+import { verifyJwt } from "../middlewares/auth.middleware.js";
 
 const router=Router()
 
@@ -19,4 +20,9 @@ router.route("/register").post(
   ]),
   registerUser) //the functions invoked in .post() or .get() etc recieve parameters req,res,next and err but function that accepts err as parameter is only invoked if error occurs else its ignored ,so carefully choose what parameters will the function invoked will accept
 
+router.route("/login").post(loginUser)
+
+router.route("/logout").post(verifyJwt,
+    logoutUser
+  )//here both verifyJwt and logoutUser are working on same post request and so the user data added by verifyJwt is accessible to 
 export default router
