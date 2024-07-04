@@ -3,6 +3,8 @@ import { apiError } from "../utils/apiError.js";
 import { apiResponse } from "../utils/apiResponse.js";
 import { wrapper } from "../utils/asyncHandler.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import jwt, { decode } from "jsonwebtoken";
+
 
 const generateAccessAndRefreshToken = async (userId) => {
   const user = await User.findById(userId)
@@ -150,8 +152,46 @@ const logoutUser = wrapper(async (req, res) => {
     .clearCookie("refreshToken", options)
     .json(new apiResponse(200, {}, "User logged out successfully"))
 })
+
+const refreshAccessToken = wrapper(async (req, res) => {
+  const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken
+  if (!incomingRefreshToken) {
+    throw new apiError(401,"Unauthorised request")
+  }
+
+ try {//its good practice to wrap decoding code in try-catch since its error prone
+   const decodedRefreshToken = jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET)
+   const user = await User.findById(decodedRefreshToken?._id)
+   if (!user) {
+     throw new apiError(401,"invalid refresh token")
+   }
+   if (incomingRefreshToken !== user.refreshToken) {
+     throw new apiError("Refresh token is expired or used")
+   }
+ 
+   const { accessToken, newRefreshToken } = await generateAccessAndRefreshToken(user._id)//used newRefreshToken rather then refreshToken since here we are creating a new refresh token which should not be consfused with older value because of same name
+   const options = {
+     secure: true,
+     httpOnly:true
+   }
+   return res.status(200)
+     .cookies("accessToken", accessToken)
+     .cookies("refreshToken", newRefreshToken)
+     .json(
+       new apiResponse(
+         200,
+         {accessToken,refreshToken:newRefreshToken},
+         "Access tokens refreshed "
+     )
+   )
+ } catch (error) {
+  throw new apiError(401,error?.message||"Invalid Refresh Token")
+ }
+})
+
 export {
   registerUser,
   loginUser,
-  logoutUser
+  logoutUser,
+  refreshAccessToken
 }
