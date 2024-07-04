@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { loginUser, logoutUser, registerUser } from "../controllers/user.controller.js";
+import { loginUser, logoutUser, refreshAccessToken, registerUser } from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import { verifyJwt } from "../middlewares/auth.middleware.js";
 
@@ -24,5 +24,6 @@ router.route("/login").post(loginUser)
 
 router.route("/logout").post(verifyJwt,
     logoutUser
-  )//here both verifyJwt and logoutUser are working on same post request and so the user data added by verifyJwt is accessible to 
+)//here both verifyJwt and logoutUser are working on same post request and so the user data added by verifyJwt is accessible to 
+router.route("/refresh-tokens").post(refreshAccessToken)
 export default router
