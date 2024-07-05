@@ -135,7 +135,7 @@ const logoutUser = wrapper(async (req, res) => {
     req.user._id,
     {
       $set: {
-        refreshToken: undefined
+        refreshToken: undefined//refresh token removed from database
       }
     },
     {
@@ -189,9 +189,97 @@ const refreshAccessToken = wrapper(async (req, res) => {
  }
 })
 
+const changePassword = wrapper(async (req, res) => {
+  const { oldPassword, newPassword, confirmPassword } = req.body
+  if (newPassword !== confirmPassword) {
+    throw new apiError(401,"password confirmation failed")
+  }
+  const user = await User.findById(req.user._id)
+  const isPasswordCorrect = await user.checkPassword(oldPassword, this.password)
+  if (!isPasswordCorrect) {
+    throw new apiError(401,"Incorrect old password")
+  }
+  user.password = newPassword
+  await user.save({ validateBeforeSave: false })
+  return res.status(200)
+    .json(
+               new apiResponse(200,{},"Password changed successfully")
+             )
+})
+
+const getCurrentUser = wrapper(async (req, res) => {
+  return res.status(200).json(
+    200,req?.user,"User data fetched successfully"
+  )
+})
+
+const updateUserData = wrapper(async (req, res) => {
+  const { fullName, email } = req.body
+  if (!(fullName && email)) {
+    throw new apiError(400,"All fields are required")
+  }
+  const user=await User.findByIdAndUpdate(req.user._id,
+    {
+      $set: {
+        userName,
+        email
+      }
+    },
+    {
+      new: true
+    }
+  ).select("-password -refreshToken")
+
+  return res.status(200).json(
+    200,user,"Account details updated successfully"
+  )  
+})
+
+const updateAvatar = wrapper(async (req, res) => {
+  const avatarUrl = req.file?.path//since multer here only intakes a single file..we use file instead of files
+  if (!avatarUrl) {
+    throw new apiError(400,"Avatar file is missing")
+  }
+  const avatarClodinary = await uploadOnCloudinary(avatarUrl)
+
+  if (!avatarClodinary.url) {
+    throw new apiError(400, "Error while uploading avatar file on cloudinary")
+  }
+  const user = await User.findById(req.user._id)
+  user.avatar = avatarClodinary.url
+  user = user.save({ validateBeforeSave: false }).select("-password -refreshToken")
+  
+  return res.status(200).json(
+    200,user,"User avatar changed successfully"
+  )
+})
+
+const updateCoverImage = wrapper(async (req, res) => {
+  const coverImageUrl = req.file?.path//since multer here only intakes a single file..we use file instead of files
+  if (!coverImageUrl) {
+    throw new apiError(400,"Cover Image file is missing")
+  }
+  const coverImageClodinary = await uploadOnCloudinary(coverImageUrl)
+
+  if (!coverImageClodinary.url) {
+    throw new apiError(400, "Error while uploading Cover Image file on cloudinary")
+  }
+  const user = await User.findById(req.user._id)
+  user.coverImage = coverImageClodinary.url
+  user = user.save({ validateBeforeSave: false }).select("-password -refreshToken")
+  
+  return res.status(200).json(
+    200,user,"User Cover-Image changed successfully"
+  )
+})
+
 export {
   registerUser,
   loginUser,
   logoutUser,
-  refreshAccessToken
+  refreshAccessToken,
+  changePassword,
+  getCurrentUser,
+  updateAvatar,
+  updateCoverImage
 }
