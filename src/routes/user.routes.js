@@ -26,4 +26,5 @@ router.route("/logout").post(verifyJwt,
     logoutUser
 )//here both verifyJwt and logoutUser are working on same post request and so the user data added by verifyJwt is accessible to 
 router.route("/refresh-tokens").post(refreshAccessToken)
+
 export default router
