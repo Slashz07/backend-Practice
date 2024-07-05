@@ -8,7 +8,7 @@ export const verifyJwt = wrapper(async (req,res,next) => {
   if (!token) {
     throw new apiError(401,"Invalid request(tokens not found in cookies)")
   }
-  console.log(token)
+
   const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET)//this unwraps the token and the data we provided to it at time of token generation
   const user = await User.findById(decodedToken?._id).select("-password -refreshToken")
   if (!user) {
