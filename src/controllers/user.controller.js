@@ -294,6 +294,53 @@ const updateCoverImage = wrapper(async (req, res) => {
   )
 })
 
+const getUserChannelInfo = wrapper(async (req, res) => {
+  const userName = req.params
+  if (!userName?.trim()) {
+    throw new apiError(400, "username is missing")
+  }
+  const channelInfo=await User.aggregate(
+    [
+      {
+        $match:{userName:userName}
+      },
+      {
+        $lookup: {
+          from: "subscriptions",
+          localField: "_id",
+          foreignField: "channel",
+          as:"subscribers"
+        }
+      },
+      {
+        $lookup: {
+          from: "subscriptions",
+          localField: "_id",
+          foreignField: "subscriber",
+          as: "subscribedTo"
+        }
+      },
+      {
+        $addFields: {
+          subscriberCount: {
+            $size:"$subscribers"
+          },
+          subscribedToCount: {
+            $size:"$subscribedTo"
+          },
+          isSubscribed: {
+            $cond: {
+              if: { $in: [req.user?._id, "$subscribers.subscriber"] },
+              then: true,
+              else:false
+            }
+          }
+        }
+      }
+    ]
+  )
+})
+
 export {
   registerUser,
   loginUser,
