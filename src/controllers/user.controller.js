@@ -4,6 +4,7 @@ import { apiResponse } from "../utils/apiResponse.js";
 import { wrapper } from "../utils/asyncHandler.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import jwt, { decode } from "jsonwebtoken";
+import { v2 as cloudinary } from 'cloudinary';
 
 
 const generateAccessAndRefreshToken = async (userId) => {
@@ -246,6 +247,16 @@ const updateAvatar = wrapper(async (req, res) => {
     throw new apiError(400, "Error while uploading avatar file on cloudinary")
   }
   const user = await User.findById(req.user._id)
+
+  let currentAvatarPublicId = user.avatar.substring(user.avatar.lastIndexOf("/") + 1)
+  currentAvatarPublicId = currentAvatarPublicId.substring(0,currentAvatarPublicId.lastIndexOf("."))
+
+  const res=cloudinary.uploader.destroy(currentAvatarPublicId, {
+  resource_type:"auto"
+  })
+  if (res.result == "ok") {
+    console.log("old avatar image successfully deleted from cloudinary")
+  }
   user.avatar = avatarClodinary.url
   user = user.save({ validateBeforeSave: false }).select("-password -refreshToken")
   
@@ -265,6 +276,16 @@ const updateCoverImage = wrapper(async (req, res) => {
     throw new apiError(400, "Error while uploading Cover Image file on cloudinary")
   }
   const user = await User.findById(req.user._id)
+
+  let currentCoverImagePublicId = user.avatar.substring(user.avatar.lastIndexOf("/") + 1)
+  currentCoverImagePublicId = currentCoverImagePublicId.substring(0, currentCoverImagePublicId.lastIndexOf("."))
+
+  const res = cloudinary.uploader.destroy(currentCoverImagePublicId, {
+    resource_type: "auto"
+  })
+  if (res.result == "ok") {
+    console.log("old  cover-image successfully deleted from cloudinary")
+  }
   user.coverImage = coverImageClodinary.url
   user = user.save({ validateBeforeSave: false }).select("-password -refreshToken")
   
