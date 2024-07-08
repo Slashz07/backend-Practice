@@ -1,5 +1,17 @@
 import { Router } from "express";
-import { loginUser, logoutUser, refreshAccessToken, registerUser } from "../controllers/user.controller.js";
+import {
+  loginUser,
+  logoutUser,
+  registerUser,
+  updateAvatar,
+  getCurrentUser,
+  changePassword,
+  updateUserData,
+  getWatchHistory,
+  updateCoverImage,
+  getUserChannelInfo,
+  refreshAccessToken
+} from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import { verifyJwt } from "../middlewares/auth.middleware.js";
 
@@ -25,6 +37,21 @@ router.route("/login").post(loginUser)
 router.route("/logout").post(verifyJwt,
     logoutUser
 )//here both verifyJwt and logoutUser are working on same post request and so the user data added by verifyJwt is accessible to 
+
 router.route("/refresh-tokens").post(refreshAccessToken)
+
+router.route("/change-password").post(verifyJwt, changePassword)
+
+router.route("/current-user").get(verifyJwt, getCurrentUser)
+
+router.route("/update-user-data").patch(verifyJwt, updateUserData)
+
+router.route("/update-user-avatar").patch(verifyJwt,upload.single("avatar"),updateAvatar)
+
+router.route("/update-user-coverImage").patch(verifyJwt, upload.single("coverImage"),updateCoverImage)
+
+router.route("/channel/:userName").get(verifyJwt, getUserChannelInfo)
+
+router.route("/watch-history").get(verifyJwt, getWatchHistory)
 
 export default router
