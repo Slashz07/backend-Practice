@@ -3,7 +3,7 @@ import mongoose, { Schema } from mongoose
 const subscriptionSchema = Schema({
   subscriber: {
     type: Schema.Types.ObjectId,
-    ref:User
+    ref:"User"
   },
   channel: {
     type: Schema.Types.ObjectId,
@@ -13,4 +13,4 @@ const subscriptionSchema = Schema({
   timestamps:true
 })
 
-export const Subscription=mongoose.model(Subscription,subscriptionSchema)
+export const Subscription=mongoose.model("Subscription",subscriptionSchema)
