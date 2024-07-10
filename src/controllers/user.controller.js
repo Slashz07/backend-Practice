@@ -5,7 +5,7 @@ import { wrapper } from "../utils/asyncHandler.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import jwt, { decode } from "jsonwebtoken";
 import { v2 as cloudinary } from 'cloudinary';
-import { mongo } from "mongoose";
+import mongoose from "mongoose";
 
 
 const generateAccessAndRefreshToken = async (userId) => {
@@ -167,15 +167,12 @@ const refreshAccessToken = wrapper(async (req, res) => {
     if (!user) {
       throw new apiError(401, "invalid refresh token")
     }
-   
-      console.log(incomingRefreshToken)
-      console.log(user.refreshToken)
-    
+  
     if (incomingRefreshToken !== user.refreshToken) {
       throw new apiError("Refresh token is expired or used")
     }
 
-    const { accessToken, newRefreshToken } = await generateAccessAndRefreshToken(user._id)//used newRefreshToken rather then refreshToken since here we are creating a new refresh token which should not be consfused with older value because of same name
+    const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id)//used newRefreshToken rather then refreshToken since here we are creating a new refresh token which should not be consfused with older value because of same name
     const options = {
       httpOnly: true,
       secure: true
@@ -183,11 +180,11 @@ const refreshAccessToken = wrapper(async (req, res) => {
     
     return res.status(200)
       .cookie("accessToken", accessToken, options)
-      .cookie("refreshToken", newRefreshToken, options)
+      .cookie("refreshToken", refreshToken, options)
       .json(
         new apiResponse(
           200,
-          { accessToken, refreshToken: newRefreshToken },
+          { accessToken, refreshToken },
           "Access tokens refreshed "
         )
       )
@@ -197,12 +194,13 @@ const refreshAccessToken = wrapper(async (req, res) => {
 })
 
 const changePassword = wrapper(async (req, res) => {
+  
   const { oldPassword, newPassword, confirmPassword } = req.body
   if (newPassword !== confirmPassword) {
     throw new apiError(401, "password confirmation failed")
   }
   const user = await User.findById(req.user._id)
-  const isPasswordCorrect = await user.checkPassword(oldPassword, this.password)
+  const isPasswordCorrect = await user.checkPassword(oldPassword)
   if (!isPasswordCorrect) {
     throw new apiError(401, "Incorrect old password")
   }
@@ -216,7 +214,7 @@ const changePassword = wrapper(async (req, res) => {
 
 const getCurrentUser = wrapper(async (req, res) => {
   return res.status(200).json(
-    200, req?.user, "User data fetched successfully"
+    new apiResponse(200, req?.user, "User data fetched successfully")
   )
 })
 
@@ -228,7 +226,7 @@ const updateUserData = wrapper(async (req, res) => {
   const user = await User.findByIdAndUpdate(req.user._id,
     {
       $set: {
-        userName,
+        fullName,
         email
       }
     },
@@ -238,7 +236,7 @@ const updateUserData = wrapper(async (req, res) => {
   ).select("-password -refreshToken")
 
   return res.status(200).json(
-    200, user, "Account details updated successfully"
+    new apiResponse(200, user, "Account details updated successfully")
   )
 })
 
@@ -257,9 +255,10 @@ const updateAvatar = wrapper(async (req, res) => {
   let currentAvatarPublicId = user.avatar.substring(user.avatar.lastIndexOf("/") + 1)
   currentAvatarPublicId = currentAvatarPublicId.substring(0, currentAvatarPublicId.lastIndexOf("."))
 
-  const response = cloudinary.uploader.destroy(currentAvatarPublicId, {
-    resource_type: "auto"
+  const response = await cloudinary.uploader.destroy(currentAvatarPublicId, {
+    resource_type: "image"//Must be one of: image, javascript, css, video, raw
   })
+
   if (response.result === "ok") {//.destroy returns an object with result:"ok" or  result:"error..."
     console.log("old avatar image successfully deleted from cloudinary")
   }
@@ -268,13 +267,14 @@ const updateAvatar = wrapper(async (req, res) => {
     $set: {
       avatar: avatarClodinary.url
     }
-  }, {
+  },
+    {
     new: true
   }).select("-password -refreshToken"); // Select fields after update
 
 
   return res.status(200).json(
-    200, user, "User avatar changed successfully"
+    new apiResponse(200, user, "User avatar changed successfully")
   )
 })
 
@@ -283,27 +283,34 @@ const updateCoverImage = wrapper(async (req, res) => {
   if (!coverImageUrl) {
     throw new apiError(400, "Cover Image file is missing")
   }
-  const coverImageClodinary = await uploadOnCloudinary(coverImageUrl)
+  const coverImageCloudinary = await uploadOnCloudinary(coverImageUrl)
 
-  if (!coverImageClodinary.url) {
+  if (!coverImageCloudinary.url) {
     throw new apiError(400, "Error while uploading Cover Image file on cloudinary")
   }
-  const user = await User.findById(req.user._id)
+  let user = await User.findById(req.user._id)
 
-  let currentCoverImagePublicId = user.avatar.substring(user.avatar.lastIndexOf("/") + 1)
+  let currentCoverImagePublicId = user.coverImage.substring(user.coverImage.lastIndexOf("/") + 1)
   currentCoverImagePublicId = currentCoverImagePublicId.substring(0, currentCoverImagePublicId.lastIndexOf("."))
-
-  const response = cloudinary.uploader.destroy(currentCoverImagePublicId, {
-    resource_type: "auto"
+  
+  const response = await cloudinary.uploader.destroy(currentCoverImagePublicId, {
+    resource_type: "image"
   })
   if (response.result == "ok") {
     console.log("old  cover-image successfully deleted from cloudinary")
   }
-  user.coverImage = coverImageClodinary.url
-  user = user.save({ validateBeforeSave: false }).select("-password -refreshToken")
+  
+  user = await User.findByIdAndUpdate(user._id, {
+    $set: {
+      coverImage: coverImageCloudinary.url
+    }
+  },
+    {
+    new: true
+  }).select("-password -refreshToken");
 
   return res.status(200).json(
-    200, user, "User Cover-Image changed successfully"
+    new apiResponse(200, user, "User Cover-Image changed successfully")
   )
 })
 
@@ -371,7 +378,7 @@ const getUserChannelInfo = wrapper(async (req, res) => {
   }
 
   return res.status(200).json(
-    200, channelInfo[0], "channel information successfully retrieved"
+    new apiResponse(200, channelInfo[0], "channel information successfully retrieved")
   )
 })
 
@@ -384,15 +391,15 @@ const getWatchHistory = wrapper(async (req, res) => {
     },
     {
       $lookup: {
-        from: "Video",
+        from: "videos",
         localField: "watchHistory",
         foreignField: "_id",
         as: "watchHistory",
         pipeline: [
           {
             $lookup: {
-              from: "user",
-              localStorage: "owner",
+              from: "users",
+              localField: "owner",
               foreignField: "_id",
               as: "owner",
               pipeline: [
@@ -409,7 +416,7 @@ const getWatchHistory = wrapper(async (req, res) => {
           {
             $addFields: {
               owner: {
-                first: "$owner"
+                $first: "$owner"
               }
             }
           }
@@ -419,7 +426,7 @@ const getWatchHistory = wrapper(async (req, res) => {
   ])
 
   return res.status(200).json(
-    new apiResponse(200, user.getWatchHistory, "User watch history fetched successfully ")
+    new apiResponse(200, user[0].watchHistory, "User watch history fetched successfully ")
   )
 })
 
