@@ -12,8 +12,8 @@ const videoSchema = new Schema(
       required:true
     },
     owner: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref:"Users"
+      type: Schema.Types.ObjectId,
+      ref:"User"
     },
     title: {
       type: String,
